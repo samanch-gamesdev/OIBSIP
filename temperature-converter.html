@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Temperature Converter — Saman Masood</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:      #0d0d14;
+      --surface: #13131f;
+      --border:  #1f1f30;
+      --accent:  #7c3aed;
+      --accent2: #a78bfa;
+      --teal:    #06b6d4;
+      --hot:     #ef4444;
+      --cold:    #3b82f6;
+      --text:    #e2e2f0;
+      --muted:   #6b6b85;
+      --white:   #ffffff;
+    }
+
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+
+    /* glow bg */
+    .bg-glow {
+      position: fixed; width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba(124,58,237,0.12) 0%, transparent 70%);
+      top: 50%; left: 50%; transform: translate(-50%, -50%);
+      pointer-events: none; z-index: 0;
+    }
+
+    .wrapper { position: relative; z-index: 1; width: 100%; max-width: 540px; }
+
+    /* header */
+    .header { text-align: center; margin-bottom: 2.5rem; }
+    .header-badge {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      background: rgba(124,58,237,0.1); border: 1px solid rgba(124,58,237,0.25);
+      color: var(--accent2); padding: 0.3rem 1rem;
+      border-radius: 999px; font-size: 0.78rem; font-weight: 500;
+      margin-bottom: 1rem;
+    }
+    .header h1 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 2.2rem; font-weight: 700;
+      color: var(--white); letter-spacing: -1px;
+      margin-bottom: 0.5rem;
+    }
+    .header h1 span {
+      background: linear-gradient(135deg, var(--accent2), var(--teal));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .header p { color: var(--muted); font-size: 0.92rem; }
+
+    /* main card */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 2.2rem;
+      margin-bottom: 1.5rem;
+    }
+
+    /* input section */
+    .input-label {
+      font-size: 0.78rem; font-weight: 600;
+      letter-spacing: 1.5px; text-transform: uppercase;
+      color: var(--accent2); margin-bottom: 0.6rem;
+      display: block;
+    }
+    .input-group {
+      display: flex; gap: 0.8rem; margin-bottom: 1.5rem;
+    }
+    .temp-input {
+      flex: 1;
+      background: var(--bg); border: 1px solid var(--border);
+      color: var(--white); padding: 0.9rem 1.2rem;
+      border-radius: 12px; font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.3rem; font-weight: 600; outline: none;
+      transition: border-color 0.2s;
+    }
+    .temp-input:focus { border-color: var(--accent); }
+    .temp-input::placeholder { color: var(--muted); font-size: 1rem; font-weight: 400; }
+
+    /* unit selector */
+    .unit-selector {
+      display: flex; gap: 0.6rem; margin-bottom: 1.8rem;
+    }
+    .unit-btn {
+      flex: 1; padding: 0.7rem;
+      border-radius: 10px; border: 1px solid var(--border);
+      background: var(--bg); color: var(--muted);
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 0.9rem; font-weight: 600;
+      cursor: pointer; transition: all 0.2s;
+    }
+    .unit-btn:hover { border-color: var(--accent2); color: var(--accent2); }
+    .unit-btn.active {
+      background: var(--accent); border-color: var(--accent);
+      color: var(--white);
+    }
+
+    /* convert button */
+    .convert-btn {
+      width: 100%; padding: 0.95rem;
+      background: linear-gradient(135deg, var(--accent), #5b21b6);
+      color: var(--white); border: none;
+      border-radius: 12px; font-family: 'Space Grotesk', sans-serif;
+      font-size: 1rem; font-weight: 700;
+      cursor: pointer; transition: opacity 0.2s, transform 0.2s;
+      letter-spacing: 0.5px;
+    }
+    .convert-btn:hover { opacity: 0.88; transform: translateY(-1px); }
+    .convert-btn:active { transform: translateY(0); }
+
+    /* results */
+    .results {
+      display: none;
+      flex-direction: column; gap: 0.8rem;
+      margin-top: 1.8rem;
+    }
+    .results.show { display: flex; }
+    .result-divider {
+      display: flex; align-items: center; gap: 0.8rem;
+      margin: 0.3rem 0;
+    }
+    .result-divider::before,
+    .result-divider::after {
+      content: ''; flex: 1; height: 1px; background: var(--border);
+    }
+    .result-divider span { color: var(--muted); font-size: 0.75rem; }
+
+    .result-card {
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 14px; padding: 1.2rem 1.5rem;
+      display: flex; align-items: center; justify-content: space-between;
+      transition: border-color 0.3s;
+    }
+    .result-card.hot { border-color: rgba(239,68,68,0.3); }
+    .result-card.cold { border-color: rgba(59,130,246,0.3); }
+    .result-card.kelvin { border-color: rgba(167,139,250,0.3); }
+
+    .result-left { display: flex; align-items: center; gap: 0.8rem; }
+    .result-icon { font-size: 1.5rem; }
+    .result-info { }
+    .result-label { font-size: 0.75rem; color: var(--muted); margin-bottom: 0.2rem; }
+    .result-value {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.6rem; font-weight: 700; color: var(--white);
+    }
+    .result-value.hot { color: var(--hot); }
+    .result-value.cold { color: var(--cold); }
+    .result-value.kelvin { color: var(--accent2); }
+    .result-unit {
+      font-size: 0.8rem; color: var(--muted);
+      background: var(--surface); padding: 0.3rem 0.7rem;
+      border-radius: 6px; border: 1px solid var(--border);
+      font-weight: 500;
+    }
+
+    /* weather feel */
+    .feel-bar {
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 14px; padding: 1.2rem 1.5rem;
+      margin-top: 0.5rem;
+    }
+    .feel-label { font-size: 0.75rem; color: var(--muted); margin-bottom: 0.8rem; }
+    .feel-text {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1rem; font-weight: 600; color: var(--white);
+    }
+    .feel-emoji { font-size: 1.3rem; margin-right: 0.5rem; }
+
+    /* error */
+    .error-msg {
+      display: none; color: var(--hot);
+      font-size: 0.85rem; margin-top: 0.8rem;
+      padding: 0.6rem 1rem; border-radius: 8px;
+      background: rgba(239,68,68,0.08);
+      border: 1px solid rgba(239,68,68,0.2);
+    }
+    .error-msg.show { display: block; }
+
+    /* reset btn */
+    .reset-btn {
+      width: 100%; padding: 0.7rem;
+      background: transparent; color: var(--muted);
+      border: 1px solid var(--border); border-radius: 10px;
+      font-family: 'Inter', sans-serif; font-size: 0.88rem;
+      cursor: pointer; transition: all 0.2s; margin-top: 1rem;
+    }
+    .reset-btn:hover { border-color: var(--accent2); color: var(--accent2); }
+
+    /* footer */
+    .footer-note {
+      text-align: center; color: var(--muted);
+      font-size: 0.78rem; margin-top: 1rem;
+    }
+    .footer-note span { color: var(--accent2); }
+  </style>
+</head>
+<body>
+
+<div class="bg-glow"></div>
+
+<div class="wrapper">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-badge">🌡️ Task 3 — Oasis Infobyte Internship</div>
+    <h1>Temperature <span>Converter</span></h1>
+    <p>Convert between Celsius, Fahrenheit & Kelvin instantly</p>
+  </div>
+
+  <!-- MAIN CARD -->
+  <div class="card">
+    <label class="input-label">Enter Temperature</label>
+    <div class="input-group">
+      <input type="number" class="temp-input" id="tempInput" placeholder="e.g. 100"/>
+    </div>
+
+    <label class="input-label">Select Input Unit</label>
+    <div class="unit-selector">
+      <button class="unit-btn active" onclick="selectUnit('celsius')">°C Celsius</button>
+      <button class="unit-btn" onclick="selectUnit('fahrenheit')">°F Fahrenheit</button>
+      <button class="unit-btn" onclick="selectUnit('kelvin')">K Kelvin</button>
+    </div>
+
+    <button class="convert-btn" onclick="convert()">⚡ Convert Temperature</button>
+
+    <div class="error-msg" id="errorMsg">⚠️ Please enter a valid number!</div>
+
+    <!-- RESULTS -->
+    <div class="results" id="results">
+      <div class="result-divider"><span>Results</span></div>
+
+      <div class="result-card hot" id="celsiusCard">
+        <div class="result-left">
+          <div class="result-icon">🌡️</div>
+          <div class="result-info">
+            <div class="result-label">Celsius</div>
+            <div class="result-value hot" id="celsiusVal">—</div>
+          </div>
+        </div>
+        <div class="result-unit">°C</div>
+      </div>
+
+      <div class="result-card cold" id="fahrenheitCard">
+        <div class="result-left">
+          <div class="result-icon">🌡️</div>
+          <div class="result-info">
+            <div class="result-label">Fahrenheit</div>
+            <div class="result-value cold" id="fahrenheitVal">—</div>
+          </div>
+        </div>
+        <div class="result-unit">°F</div>
+      </div>
+
+      <div class="result-card kelvin" id="kelvinCard">
+        <div class="result-left">
+          <div class="result-icon">⚗️</div>
+          <div class="result-info">
+            <div class="result-label">Kelvin</div>
+            <div class="result-value kelvin" id="kelvinVal">—</div>
+          </div>
+        </div>
+        <div class="result-unit">K</div>
+      </div>
+
+      <div class="feel-bar">
+        <div class="feel-label">How does it feel?</div>
+        <div class="feel-text" id="feelText">—</div>
+      </div>
+
+      <button class="reset-btn" onclick="reset()">↺ Reset</button>
+    </div>
+  </div>
+
+  <div class="footer-note">
+    Made by <span>Saman Masood</span> · Oasis Infobyte Internship 2026
+  </div>
+
+</div>
+
+<script>
+  let selectedUnit = 'celsius';
+
+  function selectUnit(unit) {
+    selectedUnit = unit;
+    document.querySelectorAll('.unit-btn').forEach(btn => btn.classList.remove('active'));
+    event.target.classList.add('active');
+    hideError();
+    document.getElementById('results').classList.remove('show');
+  }
+
+  function convert() {
+    const input = document.getElementById('tempInput').value.trim();
+
+    if (input === '' || isNaN(input)) {
+      showError();
+      return;
+    }
+
+    hideError();
+    const val = parseFloat(input);
+    let celsius, fahrenheit, kelvin;
+
+    if (selectedUnit === 'celsius') {
+      celsius = val;
+      fahrenheit = (val * 9/5) + 32;
+      kelvin = val + 273.15;
+    } else if (selectedUnit === 'fahrenheit') {
+      celsius = (val - 32) * 5/9;
+      fahrenheit = val;
+      kelvin = celsius + 273.15;
+    } else {
+      kelvin = val;
+      celsius = val - 273.15;
+      fahrenheit = (celsius * 9/5) + 32;
+    }
+
+    document.getElementById('celsiusVal').textContent = celsius.toFixed(2);
+    document.getElementById('fahrenheitVal').textContent = fahrenheit.toFixed(2);
+    document.getElementById('kelvinVal').textContent = kelvin.toFixed(2);
+
+    // feel text
+    let feel = '';
+    if (celsius <= 0) feel = '🥶 Freezing! Bundle up!';
+    else if (celsius <= 10) feel = '🧥 Very Cold — wear a heavy coat!';
+    else if (celsius <= 20) feel = '🌤️ Cool & Pleasant';
+    else if (celsius <= 30) feel = '😊 Warm & Comfortable';
+    else if (celsius <= 40) feel = '🥵 Hot — stay hydrated!';
+    else feel = '🔥 Extremely Hot — be careful!';
+
+    document.getElementById('feelText').innerHTML = feel;
+    document.getElementById('results').classList.add('show');
+  }
+
+  function showError() {
+    document.getElementById('errorMsg').classList.add('show');
+    document.getElementById('results').classList.remove('show');
+  }
+
+  function hideError() {
+    document.getElementById('errorMsg').classList.remove('show');
+  }
+
+  function reset() {
+    document.getElementById('tempInput').value = '';
+    document.getElementById('results').classList.remove('show');
+    hideError();
+  }
+
+  // Enter key support
+  document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('tempInput').addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') convert();
+    });
+  });
+</script>
+
+</body>
+</html>
